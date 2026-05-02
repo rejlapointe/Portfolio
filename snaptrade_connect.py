@@ -5,7 +5,7 @@ import webbrowser
 from dotenv import load_dotenv
 from snaptrade_client import SnapTrade
 
-load_dotenv()
+load_dotenv(os.path.join(os.path.dirname(__file__), "secret", ".env"))
 CLIENT_ID    = os.environ["SNAPTRADE_CLIENT_ID"]
 CONSUMER_KEY = os.environ["SNAPTRADE_CONSUMER_KEY"]
 USER_ID      = os.environ["SNAPTRADE_USER_ID"]
