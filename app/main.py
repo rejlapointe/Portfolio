@@ -29,7 +29,7 @@ USER_SECRET = os.environ["SNAPTRADE_USER_SECRET"]
 
 OWNER_MAP = {
     "19e75b0c-8369-42c3-880c-6e760d633cdc": "Rej",
-    "28ea0638-716a-4f61-b0bc-21425da12c04": "Wife",
+    "28ea0638-716a-4f61-b0bc-21425da12c04": "Kaz",
 }
 
 def fetch_holdings(account):
@@ -38,13 +38,19 @@ def fetch_holdings(account):
     ).body
     positions = []
     for p in h.get("positions", []):
-        sym = p.get("symbol", {})
+        brok_sym = p.get("symbol", {}) or {}
+        univ_sym = (brok_sym.get("symbol", {}) or {}) if isinstance(brok_sym, dict) else {}
+        if not isinstance(univ_sym, dict):
+            univ_sym = {}
+        ticker = univ_sym.get("raw_symbol") or univ_sym.get("symbol", "")
+        currency = (univ_sym.get("currency", {}) or {}).get("code", "")
+        description = p.get("description") or univ_sym.get("description", "")
         positions.append({
-            "ticker":      sym.get("symbol") if isinstance(sym, dict) else str(sym),
-            "description": sym.get("description", "") if isinstance(sym, dict) else "",
-            "currency":    (sym.get("currency", {}) or {}).get("code", "") if isinstance(sym, dict) else "",
-            "units":       p.get("units"),
-            "price":       p.get("price"),
+            "ticker":       ticker,
+            "description":  description,
+            "currency":     currency,
+            "units":        p.get("units"),
+            "price":        p.get("price"),
             "market_value": round((p.get("units") or 0) * (p.get("price") or 0), 2),
         })
     return {
