@@ -4,6 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Portfolio Dashboard</title>
+  <link href="https://unpkg.com/tabulator-tables@6.3.0/dist/css/tabulator.min.css" rel="stylesheet">
+  <style>
+    .tabulator { background: #1a1f2e; border: 1px solid #2d3748; border-radius: 12px; font-size: 0.82rem; color: #cbd5e1; }
+    .tabulator .tabulator-header { background: #151922; border-bottom: 1px solid #2d3748; border-radius: 12px 12px 0 0; }
+    .tabulator .tabulator-header .tabulator-col { background: #151922; border-right: 1px solid #2d3748; color: #64748b; font-size: 0.7rem; font-weight: 500; text-transform: uppercase; letter-spacing: .05em; }
+    .tabulator .tabulator-header .tabulator-col.tabulator-sortable:hover { background: #1e2433; }
+    .tabulator .tabulator-header .tabulator-col .tabulator-col-content { padding: 10px 18px; }
+    .tabulator-row { background: #1a1f2e; border-bottom: 1px solid #1e2433; color: #cbd5e1; }
+    .tabulator-row:hover, .tabulator-row.tabulator-row-even:hover { background: #1e2433 !important; }
+    .tabulator-row.tabulator-row-even { background: #1a1f2e; }
+    .tabulator-row .tabulator-cell { border-right: none; padding: 10px 18px; color: #cbd5e1; }
+    .tabulator .tabulator-header .tabulator-col .tabulator-arrow { border-top-color: #4a5568; border-bottom-color: #4a5568; }
+    .tabulator-col-title { color: #64748b; }
+  </style>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -166,18 +180,20 @@
 <div id="error">Failed to load data. Is the server running?</div>
 <div id="accounts"></div>
 
+<script src="https://unpkg.com/tabulator-tables@6.3.0/dist/js/tabulator.min.js"></script>
 <script>
+  let portfolioTable = null;
+
   async function load() {
     const btn = document.getElementById('refresh-btn');
     const loading = document.getElementById('loading');
     const error = document.getElementById('error');
-    const container = document.getElementById('accounts');
 
     btn.disabled = true;
     btn.textContent = 'Loading…';
     loading.style.display = 'block';
     error.style.display = 'none';
-    container.innerHTML = '';
+    if (portfolioTable) { portfolioTable.destroy(); portfolioTable = null; }
 
     try {
       const res = await fetch('/api/portfolio');
@@ -195,22 +211,26 @@
     }
   }
 
-  function fmt(amount, currency) {
+  function fmt(amount, currency, decimals = 2) {
     return new Intl.NumberFormat('en-CA', {
-      style: 'currency', currency: currency || 'CAD', maximumFractionDigits: 2
+      style: 'currency', currency: currency || 'CAD', maximumFractionDigits: decimals, minimumFractionDigits: decimals
     }).format(amount);
   }
 
   function render(data) {
-    document.getElementById('total-value').textContent = fmt(data.total_cad, 'CAD');
+    document.getElementById('total-value').textContent = fmt(data.total_cad, 'CAD', 0);
 
     const COLS = ['Rej RRSP', 'Rej TFSA', 'Kaz RRSP', 'Kaz TFSA'];
+    const FIELDS = ['rejRRSP', 'rejTFSA', 'kazRRSP', 'kazTFSA'];
 
     function acctLabel(acc) {
       const name = acc.name.toUpperCase();
       const type = name.includes('RRSP') ? 'RRSP' : name.includes('TFSA') ? 'TFSA' : acc.name;
       return `${acc.owner} ${type}`;
     }
+
+    const rate = parseFloat(document.getElementById('usdcad-rate').value) || 1.38;
+    const toCAD = info => info.currency === 'USD' ? (info.price || 0) * rate : (info.price || 0);
 
     const combined = {};
     for (const acc of data.accounts) {
@@ -223,43 +243,59 @@
       }
     }
 
-    const rate = parseFloat(document.getElementById('usdcad-rate').value) || 1.38;
-    const cadPrice = info => info.currency === 'USD' ? (info.price || 0) * rate : (info.price || 0);
-
-    const rows = Object.entries(combined).sort((a, b) => {
-      const cadVal = e => Object.values(e[1].qtys).reduce((s, u) => s + u, 0) * cadPrice(e[1]);
-      return cadVal(b) - cadVal(a);
+    const tableData = Object.entries(combined).map(([ticker, info]) => {
+      const totalQty = Object.values(info.qtys).reduce((s, u) => s + u, 0);
+      const cp = toCAD(info);
+      const row = { ticker, isUSD: info.currency === 'USD', description: info.description, currency: info.currency, totalQty, nativePrice: info.price, cadPriceVal: cp, value: totalQty * cp };
+      COLS.forEach((col, i) => { row[FIELDS[i]] = info.qtys[col] || null; });
+      return row;
     });
 
-    let html = `<div class="table-card"><table><thead><tr>
-      <th>Ticker</th>
-      <th>Description</th>
-      ${COLS.map(c => `<th class="right">${c}</th>`).join('')}
-      <th class="right">Total Qty</th>
-      <th class="right">Native Price</th>
-      <th class="right">CAD Price</th>
-      <th class="right">Value</th>
-    </tr></thead><tbody>`;
+    const qtyFmt = cell => {
+      const { isUSD } = cell.getRow().getData();
+      const v = cell.getValue();
+      return v ? v.toFixed(isUSD ? 3 : 0) : '';
+    };
 
-    for (const [ticker, info] of rows) {
-      const dec = info.currency === 'USD' ? 3 : 0;
-      const fmtQty = q => q ? q.toFixed(dec) : '';
-      const totalQty = Object.values(info.qtys).reduce((s, u) => s + u, 0);
-      const cp = cadPrice(info);
-      const totalValue = totalQty * cp;
-      html += `<tr>
-        <td class="ticker">${ticker}${info.currency === 'USD' ? '<span class="usd">USD</span>' : ''}</td>
-        <td>${info.description}</td>
-        ${COLS.map(c => `<td class="right">${fmtQty(info.qtys[c])}</td>`).join('')}
-        <td class="right">${totalQty.toFixed(dec)}</td>
-        <td class="right">${fmt(info.price, info.currency)}</td>
-        <td class="right">${fmt(cp, 'CAD')}</td>
-        <td class="right">${fmt(totalValue, 'CAD')}</td>
-      </tr>`;
-    }
-
-    html += `</tbody></table></div>`;
-    document.getElementById('accounts').innerHTML = html;
+    portfolioTable = new Tabulator('#accounts', {
+      data: tableData,
+      layout: 'fitColumns',
+      initialSort: [{ column: 'value', dir: 'desc' }],
+      columns: [
+        {
+          title: 'Ticker', field: 'ticker', width: 100,
+          formatter: cell => {
+            const { isUSD } = cell.getRow().getData();
+            return isUSD ? `${cell.getValue()} <span class="usd">USD</span>` : cell.getValue();
+          }
+        },
+        { title: 'Description', field: 'description', widthGrow: 3 },
+        ...COLS.map((col, i) => ({
+          title: col, field: FIELDS[i],
+          hozAlign: 'right', headerHozAlign: 'right', sorter: 'number', formatter: qtyFmt,
+        })),
+        {
+          title: 'Total Qty', field: 'totalQty',
+          hozAlign: 'right', headerHozAlign: 'right', sorter: 'number',
+          formatter: cell => { const { isUSD } = cell.getRow().getData(); return cell.getValue().toFixed(isUSD ? 3 : 0); }
+        },
+        {
+          title: 'Native Price', field: 'nativePrice',
+          hozAlign: 'right', headerHozAlign: 'right', sorter: 'number',
+          formatter: cell => fmt(cell.getValue(), cell.getRow().getData().currency),
+        },
+        {
+          title: 'CAD Price', field: 'cadPriceVal',
+          hozAlign: 'right', headerHozAlign: 'right', sorter: 'number',
+          formatter: cell => fmt(cell.getValue(), 'CAD'),
+        },
+        {
+          title: 'Value', field: 'value',
+          hozAlign: 'right', headerHozAlign: 'right', sorter: 'number',
+          formatter: cell => fmt(cell.getValue(), 'CAD', 0),
+        },
+      ],
+    });
   }
 
   load();
