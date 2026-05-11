@@ -208,17 +208,21 @@
       <th>Ticker</th>
       <th>Description</th>
       ${COLS.map(c => `<th class="right">${c}</th>`).join('')}
+      <th class="right">Total Qty</th>
       <th class="right">Price</th>
       <th class="right">Value</th>
     </tr></thead><tbody>`;
 
     for (const [ticker, info] of rows) {
+      const dec = info.currency === 'USD' ? 3 : 0;
+      const fmtQty = q => q ? q.toFixed(dec) : '—';
       const totalQty = Object.values(info.qtys).reduce((s, u) => s + u, 0);
       const totalValue = totalQty * (info.price || 0);
       html += `<tr>
         <td class="ticker">${ticker}${info.currency === 'USD' ? '<span class="usd">USD</span>' : ''}</td>
         <td>${info.description}</td>
-        ${COLS.map(c => `<td class="right">${info.qtys[c] ? info.qtys[c].toFixed(4) : '—'}</td>`).join('')}
+        ${COLS.map(c => `<td class="right">${fmtQty(info.qtys[c])}</td>`).join('')}
+        <td class="right">${totalQty.toFixed(dec)}</td>
         <td class="right">${fmt(info.price, info.currency)}</td>
         <td class="right">${fmt(totalValue, info.currency)}</td>
       </tr>`;
