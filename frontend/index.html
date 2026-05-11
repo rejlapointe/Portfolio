@@ -64,6 +64,18 @@
     #refresh-btn:hover { background: #2563eb; }
     #refresh-btn:disabled { background: #374151; cursor: default; }
 
+    #collapse-btn {
+      background: #1e2433;
+      color: #94a3b8;
+      border: 1px solid #2d3748;
+      border-radius: 8px;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: background .2s;
+    }
+    #collapse-btn:hover { background: #253047; color: #e2e8f0; }
+
     #last-updated { font-size: 0.75rem; color: #64748b; margin-top: 4px; }
 
     .owner-section { margin-bottom: 32px; }
@@ -195,6 +207,7 @@
     <button id="cols-btn" onclick="toggleColPanel()">Columns</button>
     <div id="col-panel"></div>
   </div>
+  <button id="collapse-btn" onclick="toggleTable()">Collapse</button>
   <button id="refresh-btn" onclick="load()">Refresh</button>
 </header>
 
@@ -343,6 +356,14 @@
       label.appendChild(document.createTextNode(' ' + title));
       panel.appendChild(label);
     });
+  }
+
+  function toggleTable() {
+    const el = document.getElementById('accounts');
+    const btn = document.getElementById('collapse-btn');
+    const collapsed = el.style.display === 'none';
+    el.style.display = collapsed ? '' : 'none';
+    btn.textContent = collapsed ? 'Collapse' : 'Expand';
   }
 
   function toggleColPanel() {
