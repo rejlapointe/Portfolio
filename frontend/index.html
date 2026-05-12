@@ -154,6 +154,8 @@
     #col-panel.open { display: flex; }
     #col-panel label { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: #cbd5e1; cursor: pointer; white-space: nowrap; }
     #col-panel input[type=checkbox] { accent-color: #3b82f6; cursor: pointer; }
+    #col-panel-close { align-self: flex-end; background: none; border: none; color: #94a3b8; font-size: 1rem; cursor: pointer; padding: 0; line-height: 1; }
+    #col-panel-close:hover { color: #e2e8f0; }
 
     #rate-card {
       background: #1e2433;
@@ -372,6 +374,11 @@
     const table = tbl || portfolioTable;
     const panel = document.getElementById('col-panel');
     panel.innerHTML = '';
+    const closeBtn = document.createElement('button');
+    closeBtn.id = 'col-panel-close';
+    closeBtn.textContent = '✕';
+    closeBtn.onclick = () => { panel.classList.remove('open'); alert('Hi'); };
+    panel.appendChild(closeBtn);
     table.getColumns().forEach(col => {
       const field = col.getField();
       const title = col.getDefinition().title;
