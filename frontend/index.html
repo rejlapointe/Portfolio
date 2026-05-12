@@ -377,7 +377,12 @@
     const closeBtn = document.createElement('button');
     closeBtn.id = 'col-panel-close';
     closeBtn.textContent = '✕';
-    closeBtn.onclick = () => { panel.classList.remove('open'); alert('Hi'); };
+    closeBtn.onclick = () => {
+      panel.classList.remove('open');
+      const el = document.getElementById('accounts');
+      el.style.display = 'none';
+      setTimeout(() => { el.style.display = ''; }, 0);
+    };
     panel.appendChild(closeBtn);
     table.getColumns().forEach(col => {
       const field = col.getField();
