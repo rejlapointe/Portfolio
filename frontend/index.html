@@ -219,6 +219,22 @@
 <script>
   let portfolioTable = null;
 
+  const LS_COLS   = 'portfolio_col_visibility';
+  const LS_HIDDEN = 'portfolio_table_hidden';
+
+  function saveColVisibility() {
+    const state = {};
+    portfolioTable.getColumns().forEach(col => {
+      const field = col.getField();
+      if (field) state[field] = col.isVisible();
+    });
+    localStorage.setItem(LS_COLS, JSON.stringify(state));
+  }
+
+  function loadColVisibility() {
+    try { return JSON.parse(localStorage.getItem(LS_COLS)) || {}; } catch { return {}; }
+  }
+
   async function load() {
     const btn = document.getElementById('refresh-btn');
     const loading = document.getElementById('loading');
@@ -335,7 +351,20 @@
         },
       ],
     });
-    setTimeout(() => buildColPanel(), 0);
+    setTimeout(() => {
+      // Restore saved column visibility
+      const savedCols = loadColVisibility();
+      portfolioTable.getColumns().forEach(col => {
+        const field = col.getField();
+        if (field && savedCols[field] === false) col.hide();
+      });
+      buildColPanel();
+      // Restore hide/show state
+      if (localStorage.getItem(LS_HIDDEN) === 'true') {
+        document.getElementById('accounts').style.display = 'none';
+        document.getElementById('collapse-btn').textContent = 'Show';
+      }
+    }, 0);
 
   }
 
@@ -351,7 +380,7 @@
       const cb = document.createElement('input');
       cb.type = 'checkbox';
       cb.checked = col.isVisible();
-      cb.onchange = () => col.toggle();
+      cb.onchange = () => { col.toggle(); saveColVisibility(); };
       label.appendChild(cb);
       label.appendChild(document.createTextNode(' ' + title));
       panel.appendChild(label);
@@ -364,6 +393,7 @@
     const collapsed = el.style.display === 'none';
     el.style.display = collapsed ? '' : 'none';
     btn.textContent = collapsed ? 'Hide' : 'Show';
+    localStorage.setItem(LS_HIDDEN, String(!collapsed));
   }
 
   function toggleColPanel() {
