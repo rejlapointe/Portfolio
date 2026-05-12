@@ -1,5 +1,8 @@
 We're going to keep building the app. Before writing any code, re-read the existing code first to stay consistent with its structure and conventions. After each step, refresh Edge and visually verify the result in the live app before rating. Base your rating on what you actually see in Edge, not on the code alone. If below 8, redo it automatically until you score it 8 or higher — then stop and wait for me to continue. Only modify what is needed for each step — do not refactor or change anything else. Do not add features I didn't ask for. Do not invent library syntax — only use methods you are certain exist. If unsure about anything, say so instead of guessing. Let's do all these things but stop after each for me to test them.
 
+/startportfolio
+
+
 4) I dont know what the current Price column is but I want a native price and CAD Price column.
 
 5) I want a currency column at the end
