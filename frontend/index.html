@@ -219,6 +219,15 @@
 
 <script src="https://unpkg.com/tabulator-tables@6.3.0/dist/js/tabulator.min.js"></script>
 <script>
+  // ============================================================
+  // PHONE CONFIG — edit this to control what shows on phone (≤390px)
+  // ============================================================
+  const PHONE = {
+    hiddenCols: ['description', 'rejRRSP', 'rejTFSA', 'kazRRSP', 'kazTFSA', 'nativePrice'],
+    hiddenElements: ['#cols-btn'],
+  };
+  // ============================================================
+
   let portfolioTable = null;
 
   const LS_COLS   = 'portfolio_col_visibility';
@@ -311,6 +320,7 @@
       return v ? v.toFixed(isUSD ? 3 : 0) : '';
     };
 
+    const savedCols = loadColVisibility();
     portfolioTable = new Tabulator('#accounts', {
       data: tableData,
       layout: 'fitColumns',
@@ -319,35 +329,41 @@
       columns: [
         {
           title: 'Ticker', field: 'ticker', width: 100,
+          visible: savedCols['ticker'] !== false,
           formatter: cell => {
             const { isUSD } = cell.getRow().getData();
             return isUSD ? `${cell.getValue()} <span class="usd">USD</span>` : cell.getValue();
           },
           bottomCalc: () => 'TOTAL',
         },
-        { title: 'Description', field: 'description', widthGrow: 3 },
+        { title: 'Description', field: 'description', widthGrow: 3, visible: savedCols['description'] !== false },
         ...COLS.map((col, i) => ({
           title: col, field: FIELDS[i],
           hozAlign: 'right', headerHozAlign: 'right', sorter: 'number', formatter: qtyFmt,
+          visible: savedCols[FIELDS[i]] !== false,
         })),
         {
           title: 'Total Qty', field: 'totalQty',
           hozAlign: 'right', headerHozAlign: 'right', sorter: 'number',
+          visible: savedCols['totalQty'] !== false,
           formatter: cell => { const { isUSD } = cell.getRow().getData(); return cell.getValue().toFixed(isUSD ? 3 : 0); }
         },
         {
           title: 'Native Price', field: 'nativePrice',
           hozAlign: 'right', headerHozAlign: 'right', sorter: 'number',
+          visible: savedCols['nativePrice'] !== false,
           formatter: cell => fmt(cell.getValue(), cell.getRow().getData().currency),
         },
         {
           title: 'CAD Price', field: 'cadPriceVal',
           hozAlign: 'right', headerHozAlign: 'right', sorter: 'number',
+          visible: savedCols['cadPriceVal'] !== false,
           formatter: cell => fmt(cell.getValue(), 'CAD'),
         },
         {
           title: 'Value', field: 'value',
           hozAlign: 'right', headerHozAlign: 'right', sorter: 'number',
+          visible: savedCols['value'] !== false,
           formatter: cell => fmt(cell.getValue(), 'CAD', 0),
           bottomCalc: 'sum',
           bottomCalcFormatter: cell => fmt(cell.getValue(), 'CAD', 0),
@@ -355,12 +371,6 @@
       ],
     });
     setTimeout(() => {
-      // Restore saved column visibility
-      const savedCols = loadColVisibility();
-      portfolioTable.getColumns().forEach(col => {
-        const field = col.getField();
-        if (field && savedCols[field] === false) col.hide();
-      });
       buildColPanel();
       // Restore hide/show state
       if (localStorage.getItem(LS_HIDDEN) === 'true') {
@@ -423,6 +433,18 @@
       document.getElementById('col-panel').classList.remove('open');
     }
   });
+
+  (function applyPhoneStyles() {
+    const colRules = PHONE.hiddenCols.map(f =>
+      `.tabulator-col[tabulator-field="${f}"], .tabulator-cell[tabulator-field="${f}"]`
+    ).join(', ');
+    const elRules = PHONE.hiddenElements.join(', ');
+    const rules = [colRules, elRules].filter(Boolean).join(', ');
+    if (!rules) return;
+    const style = document.createElement('style');
+    style.textContent = `@media (max-width: 390px) { ${rules} { display: none !important; } }`;
+    document.head.appendChild(style);
+  })();
 
   load();
 </script>
