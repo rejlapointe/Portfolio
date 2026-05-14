@@ -352,7 +352,7 @@
           title: 'Native Price', field: 'nativePrice',
           hozAlign: 'right', headerHozAlign: 'right', sorter: 'number',
           visible: savedCols['nativePrice'] !== false,
-          formatter: cell => fmt(cell.getValue(), cell.getRow().getData().currency),
+          formatter: cell => fmt(cell.getValue(), cell.getRow().getData().currency).replace(/^US\$/, '$'),
         },
         {
           title: 'CAD Price', field: 'cadPriceVal',
