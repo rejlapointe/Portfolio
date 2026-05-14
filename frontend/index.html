@@ -328,7 +328,7 @@
 
       columns: [
         {
-          title: 'Ticker', field: 'ticker', width: 100,
+          title: 'Ticker', field: 'ticker', widthGrow: 0, widthShrink: 0,
           visible: savedCols['ticker'] !== false,
           formatter: cell => {
             const { isUSD } = cell.getRow().getData();
@@ -369,6 +369,11 @@
           bottomCalcFormatter: cell => fmt(cell.getValue(), 'CAD', 0),
         },
       ],
+      tableBuilt: function() {
+        const col = this.getColumn('ticker');
+        const w = Math.max(...[col.getElement(), ...col.getCells().map(c => c.getElement())].map(el => el.scrollWidth));
+        col.setWidth(w);
+      },
     });
     setTimeout(() => {
       buildColPanel();
