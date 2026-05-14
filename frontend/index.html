@@ -255,6 +255,7 @@
       render(data);
       document.getElementById('last-updated').textContent =
         'Updated ' + new Date().toLocaleTimeString();
+      reflowTable();
     } catch (e) {
       error.style.display = 'block';
     } finally {
@@ -379,9 +380,7 @@
     closeBtn.textContent = '✕';
     closeBtn.onclick = () => {
       panel.classList.remove('open');
-      const el = document.getElementById('accounts');
-      el.style.display = 'none';
-      setTimeout(() => { el.style.display = ''; }, 0);
+      reflowTable();
     };
     panel.appendChild(closeBtn);
     table.getColumns().forEach(col => {
@@ -406,6 +405,12 @@
     el.style.display = collapsed ? '' : 'none';
     btn.textContent = collapsed ? 'Hide' : 'Show';
     localStorage.setItem(LS_HIDDEN, String(!collapsed));
+  }
+
+  function reflowTable() {
+    const el = document.getElementById('accounts');
+    el.style.display = 'none';
+    setTimeout(() => { el.style.display = ''; }, 0);
   }
 
   function toggleColPanel() {
