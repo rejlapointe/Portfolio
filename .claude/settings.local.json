@@ -3,7 +3,9 @@
     "allow": [
       "Bash(python run.py)",
       "mcp__Claude_in_Chrome__navigate",
-      "mcp__Claude_in_Chrome__computer"
+      "mcp__Claude_in_Chrome__computer",
+      "WebSearch",
+      "mcp__Claude_in_Chrome__list_connected_browsers"
     ]
   }
 }
